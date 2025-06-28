@@ -1,0 +1,275 @@
+import java.util.Scanner;
+import java.io.*;
+
+public class Player implements Comparable<Player> {
+    private String playerName;
+    private int wins;
+    private int draws;
+    private int losses;
+
+    public Player(String playerName) {
+        this.playerName = playerName;
+        this.wins = 0;
+        this.draws = 0;
+        this.losses = 0;
+    }
+
+    public void addWin() {
+        wins++;
+    }
+
+    public void addDraw() {
+        draws++;
+    }
+
+    public void addLoss() {
+        losses++;
+    }
+
+    public double winRate() {
+        int totalGames = wins + draws + losses;
+        return totalGames == 0 ? 0.0 : (double) wins / totalGames;
+    }
+
+    public String getPlayerName() { return playerName; }
+    public int getWins() { return wins; }
+    public int getDraws() { return draws; }
+    public int getLosses() { return losses; }
+
+    public void setWins(int wins) { this.wins = wins; }
+    public void setDraws(int draws) { this.draws = draws; }
+    public void setLosses(int losses) { this.losses = losses; }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof Player)) return false;
+        Player other = (Player) obj;
+        return playerName.equals(other.playerName);
+    }
+
+    @Override
+    public int hashCode() {
+        return playerName.hashCode();
+    }
+
+    @Override
+    public int compareTo(Player other) {
+        return Integer.compare(other.wins, this.wins);
+    }
+
+    @Override
+    public String toString() {
+        return playerName + " [Wins: " + wins + ", Draws: " + draws + ", Losses: " + losses + ", WinRate: " + winRate() + "]";
+    }
+}
+
+
+class Scoreboard {
+    private BST<Integer, List<String>> winTree;
+    private HashST<String, Player> players;
+    private int playedGames;
+
+    public Scoreboard() {
+        winTree = new BST<>();
+        players = new HashST<>();
+        playedGames = 0;
+    }
+
+    public void registerPlayer(String playerName) {
+        if (!players.contains(playerName)) {
+            Player newPlayer = new Player(playerName);
+            players.put(playerName, newPlayer);
+            winTree.putIfAbsent(0, new ArrayList<>());
+            winTree.get(0).add(playerName);
+        }
+    }
+
+    public boolean checkPlayer(String playerName) {
+        return players.contains(playerName);
+    }
+
+    public void addGameResult(String winnerPlayerName, String loserPlayerName, boolean draw) {
+        Player winner = players.get(winnerPlayerName);
+        Player loser = players.get(loserPlayerName);
+
+        winTree.get(winner.getWins()).remove(winnerPlayerName);
+        winTree.get(loser.getWins()).remove(loserPlayerName);
+
+        if (draw) {
+            winner.addDraw();
+            loser.addDraw();
+        } else {
+            winner.addWin();
+            loser.addLoss();
+        }
+
+        winTree.putIfAbsent(winner.getWins(), new ArrayList<>());
+        winTree.putIfAbsent(loser.getWins(), new ArrayList<>());
+
+        winTree.get(winner.getWins()).add(winnerPlayerName);
+        winTree.get(loser.getWins()).add(loserPlayerName);
+
+        playedGames++;
+    }
+
+    public Player[] winRange(int lo, int hi) {
+        List<Player> result = new ArrayList<>();
+        for (int key : winTree.keys()) {
+            if (key >= lo && key <= hi) {
+                for (String name : winTree.get(key)) {
+                    result.add(players.get(name));
+                }
+            }
+        }
+        return result.toArray(new Player[0]);
+    }
+
+    public Player[] winSuccessor(int wins) {
+        Integer successor = winTree.ceiling(wins + 1);
+        if (successor == null) return new Player[0];
+
+        List<Player> result = new ArrayList<>();
+        for (String name : winTree.get(successor)) {
+            result.add(players.get(name));
+        }
+        return result.toArray(new Player[0]);
+    }
+
+    public int getPlayedGames() {
+        return playedGames;
+    }
+}
+class ConnectFour {
+    private char[][] grid = new char[7][6];
+    private char currentSymbol;
+
+    public ConnectFour() {
+        for (int col = 0; col < 7; col++) {
+            for (int row = 0; row < 6; row++) {
+                grid[col][row] = ' ';
+            }
+        }
+        currentSymbol = 'X';
+    }
+
+    public boolean makeMove(int column) {
+        if (column < 0 || column >= 7) return false;
+        for (int row = 0; row < 6; row++) {
+            if (grid[column][row] == ' ') {
+                grid[column][row] = currentSymbol;
+                currentSymbol = (currentSymbol == 'X') ? 'O' : 'X';
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String isGameOver() {
+        for (int col = 0; col < 7; col++) {
+            for (int row = 0; row < 6; row++) {
+                char symbol = grid[col][row];
+                if (symbol != ' ') {
+                    if (col + 3 < 7 && symbol == grid[col + 1][row] && symbol == grid[col + 2][row] && symbol == grid[col + 3][row]) return String.valueOf(symbol);
+                    if (row + 3 < 6 && symbol == grid[col][row + 1] && symbol == grid[col][row + 2] && symbol == grid[col][row + 3]) return String.valueOf(symbol);
+                    if (col + 3 < 7 && row + 3 < 6 && symbol == grid[col + 1][row + 1] && symbol == grid[col + 2][row + 2] && symbol == grid[col + 3][row + 3]) return String.valueOf(symbol);
+                    if (col + 3 < 7 && row - 3 >= 0 && symbol == grid[col + 1][row - 1] && symbol == grid[col + 2][row - 2] && symbol == grid[col + 3][row - 3]) return String.valueOf(symbol);
+                }
+            }
+        }
+
+        boolean full = true;
+        for (int col = 0; col < 7; col++) {
+            if (grid[col][5] == ' ') {
+                full = false;
+                break;
+            }
+        }
+        if (full) return "DRAW";
+
+        return " ";
+    }
+
+    public void printBoard() {
+        System.out.println();
+        for (int row = 5; row >= 0; row--) {
+            System.out.print("| ");
+            for (int col = 0; col < 7; col++) {
+                System.out.print(grid[col][row] + " | ");
+            }
+            System.out.println();
+        }
+        System.out.println("  0   1   2   3   4   5   6\n");
+    }
+
+    public char getCurrentSymbol() {
+        return currentSymbol;
+    }
+}
+
+
+public class Game {
+    private String status;
+    private String winnerPlayerName;
+    private String playerNameA;
+    private String playerNameB;
+    private ConnectFour connectFour;
+
+    public Game(String playerNameA, String playerNameB) {
+        this.playerNameA = playerNameA;
+        this.playerNameB = playerNameB;
+        this.status = "IN_PROGRESS";
+        this.winnerPlayerName = "";
+        this.connectFour = new ConnectFour();
+    }
+
+    public String play() {
+        Scanner scanner = new Scanner(System.in);
+
+        while (status.equals("IN_PROGRESS")) {
+            connectFour.printBoard();
+            String currentPlayer = connectFour.getCurrentSymbol() == 'X' ? playerNameA : playerNameB;
+            System.out.print("Turno de " + currentPlayer + " (" + connectFour.getCurrentSymbol() + "). Columna (0-6): ");
+
+            int columna;
+            try {
+                columna = scanner.nextInt();
+            } catch (Exception e) {
+                System.out.println("Entrada invalida.");
+                scanner.nextLine();
+                continue;
+            }
+
+            if (!connectFour.makeMove(columna)) {
+                System.out.println("Movimiento invalido.");
+                continue;
+            }
+
+            String resultado = connectFour.isGameOver();
+            if (resultado.equals("X")) {
+                status = "VICTORY";
+                winnerPlayerName = playerNameA;
+            } else if (resultado.equals("O")) {
+                status = "VICTORY";
+                winnerPlayerName = playerNameB;
+            } else if (resultado.equals("DRAW")) {
+                status = "DRAW";
+                winnerPlayerName = "";
+            }
+        }
+
+        connectFour.printBoard();
+        if (status.equals("DRAW")) System.out.println("Empate");
+        else System.out.println("Gano: " + winnerPlayerName);
+
+        return winnerPlayerName;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public String getWinnerPlayerName() {
+        return winnerPlayerName;
+    }
+}
