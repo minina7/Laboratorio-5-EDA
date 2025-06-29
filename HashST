@@ -1,0 +1,17 @@
+import java.util.HashMap;
+
+public class HashST<Key, Value> {
+    private HashMap<Key, Value> map = new HashMap<>();
+
+    public void put(Key key, Value value) {
+        map.put(key, value);
+    }
+
+    public Value get(Key key) {
+        return map.get(key);
+    }
+
+    public boolean contains(Key key) {
+        return map.containsKey(key);
+    }
+}
