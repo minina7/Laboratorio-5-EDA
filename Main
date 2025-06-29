@@ -1,0 +1,17 @@
+public class Main {
+    public static void main(String[] args) {
+        Scoreboard scoreboard = new Scoreboard();
+
+        scoreboard.registerPlayer("Stella");
+        scoreboard.registerPlayer("Mateo");
+
+        Game partida = new Game("Stella", "Mateo");
+        String ganador = partida.play();
+
+        if (ganador.equals("")) {
+            System.out.println("La partida terminó en empate.");
+        } else {
+            System.out.println("Ganó: " + ganador);
+        }
+    }
+}
